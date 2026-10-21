@@ -1,0 +1,89 @@
+---
+import { SITE, DEVELOPER } from '../consts';
+import { url } from '../lib/url';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer__inner">
+    <div class="footer__about">
+      <p class="footer__name">{SITE.name}</p>
+      <p class="footer__line">{SITE.tagline}</p>
+    </div>
+
+    <nav class="footer__links" aria-label="Contact">
+      <a href={DEVELOPER.links.github} rel="me noopener">GitHub<span aria-hidden="true"> ↗</span></a>
+      {DEVELOPER.links.email && <a href={`mailto:${DEVELOPER.links.email}`}>Email</a>}
+      <a href={url('/about/')}>About</a>
+    </nav>
+
+    <p class="footer__meta">
+      © {year} {SITE.name}. Built with Astro, hosted on GitHub Pages.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--line);
+    background: var(--bg-soft);
+    padding-block: var(--space-xl);
+    margin-top: auto;
+  }
+
+  .footer__inner {
+    display: grid;
+    gap: var(--space-md);
+  }
+
+  .footer__name {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .footer__line {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+  }
+
+  .footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+  }
+
+  .footer__links a {
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line-strong);
+    padding-bottom: 2px;
+  }
+
+  .footer__links a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .footer__meta {
+    font-size: var(--step--1);
+    color: var(--ink-3);
+  }
+
+  @media (min-width: 48rem) {
+    .footer__inner {
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      row-gap: var(--space-lg);
+    }
+
+    .footer__meta {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

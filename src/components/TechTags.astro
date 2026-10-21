@@ -1,0 +1,23 @@
+---
+interface Props {
+  tech: readonly string[];
+  limit?: number;
+  label?: string;
+}
+
+const { tech, limit, label = 'Technologies' } = Astro.props;
+const shown = limit ? tech.slice(0, limit) : tech;
+const rest = limit ? tech.length - shown.length : 0;
+---
+
+<ul class="tags" aria-label={label}>
+  {shown.map((item) => <li class="tag">{item}</li>)}
+  {rest > 0 && <li class="tag tag--more">+{rest}</li>}
+</ul>
+
+<style>
+  .tag--more {
+    color: var(--ink-3);
+    border-style: dashed;
+  }
+</style>

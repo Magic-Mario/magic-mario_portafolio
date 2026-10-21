@@ -1,0 +1,168 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { DEVELOPER } from '../consts';
+import { url } from '../lib/url';
+
+const description = `${DEVELOPER.name} — ${DEVELOPER.headline}`;
+---
+
+<BaseLayout title="About" description={description}>
+  <section class="container container--narrow">
+    <p class="eyebrow">About</p>
+    <h1 class="about__title reveal">{DEVELOPER.name}</h1>
+    <p class="lead reveal reveal--2">{DEVELOPER.headline}</p>
+  </section>
+
+  <section class="section--tight container about__grid">
+    <div class="about__bio stack">
+      {DEVELOPER.bio.map((paragraph) => <p>{paragraph}</p>)}
+    </div>
+
+    <aside class="about__aside">
+      <div class="about__card">
+        <h2 class="about__card-title">Focus</h2>
+        <ul class="about__focus">
+          {DEVELOPER.focus.map((item) => <li>{item}</li>)}
+        </ul>
+      </div>
+
+      <div class="about__card">
+        <h2 class="about__card-title">Contact</h2>
+        <ul class="about__contact">
+          <li>
+            <a href={DEVELOPER.links.github} rel="me noopener">
+              GitHub <span aria-hidden="true">↗</span>
+            </a>
+            <span class="about__contact-note">Code, commits and issues</span>
+          </li>
+          {
+            DEVELOPER.links.email && (
+              <li>
+                <a href={`mailto:${DEVELOPER.links.email}`}>Email</a>
+                <span class="about__contact-note">Direct messages</span>
+              </li>
+            )
+          }
+        </ul>
+      </div>
+    </aside>
+  </section>
+
+  <section class="section--tight container container--narrow">
+    <div class="about__cta">
+      <p class="about__cta-text">The work itself is the best introduction.</p>
+      <a class="button" href={url('/#work')}>See the case studies</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .about__title {
+    font-size: var(--step-3);
+    margin-top: var(--space-md);
+  }
+
+  .about__grid {
+    display: grid;
+    gap: var(--space-2xl);
+  }
+
+  .about__bio {
+    font-size: var(--step-1);
+    color: var(--ink-2);
+    max-width: var(--measure);
+  }
+
+  .about__aside {
+    display: grid;
+    gap: var(--space-lg);
+    align-self: start;
+  }
+
+  .about__card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow);
+  }
+
+  .about__card-title {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-3);
+    margin-bottom: var(--space-md);
+  }
+
+  .about__focus,
+  .about__contact {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--space-sm);
+  }
+
+  .about__focus li {
+    padding-left: 1.1rem;
+    position: relative;
+    color: var(--ink-2);
+  }
+
+  .about__focus li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.62em;
+    width: 0.4rem;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .about__contact {
+    gap: var(--space-md);
+  }
+
+  .about__contact li {
+    display: grid;
+    gap: 0.15rem;
+  }
+
+  .about__contact a {
+    font-family: var(--font-serif);
+    font-size: var(--step-1);
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .about__contact a:hover {
+    color: var(--accent);
+  }
+
+  .about__contact-note {
+    font-size: var(--step--1);
+    color: var(--ink-3);
+  }
+
+  .about__cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    border-top: 1px solid var(--line);
+    padding-top: var(--space-xl);
+  }
+
+  .about__cta-text {
+    font-family: var(--font-serif);
+    font-size: var(--step-2);
+  }
+
+  @media (min-width: 56rem) {
+    .about__grid {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    }
+  }
+</style>

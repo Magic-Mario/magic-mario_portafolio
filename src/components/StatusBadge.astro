@@ -1,0 +1,42 @@
+---
+interface Props {
+  status: 'active' | 'prototype' | 'archived';
+}
+
+const { status } = Astro.props;
+const label = { active: 'Active', prototype: 'Prototype', archived: 'Archived' }[status];
+---
+
+<span class={`status status--${status}`}>
+  <span class="status__dot" aria-hidden="true"></span>{label}
+</span>
+
+<style>
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--ink-2);
+  }
+
+  .status__dot {
+    width: 0.5em;
+    height: 0.5em;
+    border-radius: 50%;
+    background: var(--ink-3);
+  }
+
+  .status--active .status__dot {
+    background: #1a9c63;
+    box-shadow: 0 0 0 3px color-mix(in srgb, #1a9c63 22%, transparent);
+  }
+
+  .status--prototype .status__dot {
+    background: #d18b0b;
+    box-shadow: 0 0 0 3px color-mix(in srgb, #d18b0b 22%, transparent);
+  }
+</style>
