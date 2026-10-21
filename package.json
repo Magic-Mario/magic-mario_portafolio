@@ -1,0 +1,30 @@
+{
+  "name": "magic-mario-portafolio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "check": "astro check",
+    "validate:content": "bun scripts/validate-content.mjs",
+    "build": "bun run check && bun run validate:content && astro build",
+    "preview": "astro preview",
+    "test:e2e": "playwright test",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "4.3.14",
+    "@astrojs/sitemap": "3.7.4",
+    "astro": "5.18.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.11",
+    "@playwright/test": "^1.64.1",
+    "typescript": "5.9.3"
+  }
+}
