@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Life Simulator — System Architecture",
+    "output": ".archify/architecture-life-simulator-20261015-155250/life-simulator.html",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:Magic-Mario/web-infra.git",
+      "revision": "48e5ee3d11ffe3c389ce9bd4636c1a371c6401ab",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "player",
+      "type": "external",
+      "label": "Player Browser",
+      "sublabel": "anonymous X-Player-Id",
+      "pos": [30, 300],
+      "size": [140, 64]
+    },
+    {
+      "id": "alb",
+      "type": "cloud",
+      "label": "Load Balancer",
+      "sublabel": "AWS ALB · TLS :443",
+      "tag": "WAF attached",
+      "pos": [250, 300],
+      "size": [155, 72],
+      "sources": [
+        { "path": "alb.tf", "line": 23, "end_line": 35, "label": "internet-facing ALB" },
+        { "path": "alb.tf", "line": 117, "end_line": 124, "label": "/api/* path rule" },
+        { "path": "waf.tf", "line": 180, "end_line": 183, "label": "WAF on the ALB" }
+      ]
+    },
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "Next.js Frontend",
+      "sublabel": "EKS cluster · :3000",
+      "pos": [470, 300],
+      "size": [150, 64]
+    },
+    {
+      "id": "backend",
+      "type": "backend",
+      "label": "Life Backend",
+      "sublabel": "FastAPI REST · :8000",
+      "pos": [750, 300],
+      "size": [150, 64]
+    },
+    {
+      "id": "lives",
+      "type": "database",
+      "label": "DynamoDB lives",
+      "sublabel": "PK/SK · state + events",
+      "pos": [745, 90],
+      "size": [165, 72],
+      "sources": [
+        { "path": "dynamodb.tf", "line": 26, "end_line": 46, "label": "owned by backend" }
+      ]
+    },
+    {
+      "id": "events",
+      "type": "backend",
+      "label": "Events Service",
+      "sublabel": "gRPC events.v2 · :50051",
+      "pos": [745, 520],
+      "size": [175, 72]
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "Events Cache",
+      "sublabel": "DynamoDB · YEAR#/DECADE#",
+      "pos": [745, 740],
+      "size": [175, 72],
+      "sources": [
+        { "path": "dynamodb.tf", "line": 48, "end_line": 68, "label": "owned by events" }
+      ]
+    },
+    {
+      "id": "wiki",
+      "type": "external",
+      "label": "Wikipedia (es)",
+      "sublabel": "MediaWiki Action API",
+      "pos": [1000, 520],
+      "size": [145, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Private subnets — no public IP",
+      "wraps": ["frontend", "backend", "events"],
+      "pad": 14
+    }
+  ],
+  "connections": [
+    { "id": "player-to-alb", "from": "player", "to": "alb", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "alb-to-frontend", "from": "alb", "to": "frontend", "label": "/ · UI" },
+    { "id": "frontend-to-backend", "from": "frontend", "to": "backend", "label": "REST proxy", "variant": "emphasis" },
+    { "id": "backend-to-lives", "from": "backend", "to": "lives", "label": "put/get state", "variant": "emphasis" },
+    { "id": "backend-to-events", "from": "backend", "to": "events", "label": "gRPC GetEvents", "variant": "emphasis" },
+    { "id": "events-to-cache", "from": "events", "to": "cache", "label": "YEAR#/DECADE# keys" },
+    { "id": "events-to-wiki", "from": "events", "to": "wiki", "label": "HTTPS", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Edge",
+      "items": [
+        "The ALB terminates TLS and routes by path: / to the frontend, /api/* to the backend",
+        "An AWS WAF web ACL is attached to the ALB and starts in Count mode",
+        "Services sit in private subnets; only the ALB is internet-facing"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Runtime",
+      "items": [
+        "One reusable Terraform module builds two independent EKS clusters: backend and frontend",
+        "The events service is a ClusterIP inside the backend cluster, so gRPC never crosses the ALB",
+        "The browser only ever calls the Next origin: a server-side route handler proxies /api/* to the backend, so there is no CORS",
+        "The frontend reaches the backend through a manual Endpoints/NodePort bridge, and images come from immutable ECR repos"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Single-owner data",
+      "items": [
+        "Two DynamoDB tables, one owner each: lives belongs to the backend, events-cache to the events service",
+        "Each service has an IAM policy scoped to its own table only; neither can read the other",
+        "A local emulator (Floci) runs the whole stack offline: Docker Compose, Terraform, then Kubernetes"
+      ]
+    }
+  ]
+}

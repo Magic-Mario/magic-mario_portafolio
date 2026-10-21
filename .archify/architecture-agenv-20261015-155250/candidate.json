@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "agenv — Skill Resolution and Materialization",
+    "output": ".archify/architecture-agenv-20261015-155250/agenv.html",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Magic-Mario/agenv",
+      "revision": "07280cbf20e72d8b5958e26138612c6b11cd38c8",
+      "provider": "github"
+    }
+  },
+  "components": [
+    {
+      "id": "dev",
+      "type": "external",
+      "label": "Developer",
+      "sublabel": "runs the agenv CLI",
+      "pos": [40, 300],
+      "size": [140, 64]
+    },
+    {
+      "id": "cli",
+      "type": "backend",
+      "label": "agenv CLI",
+      "sublabel": "init · add · install",
+      "pos": [300, 300],
+      "size": [150, 64],
+      "sources": [
+        { "path": "src/main.rs", "line": 21, "end_line": 40, "label": "subcommands" }
+      ]
+    },
+    {
+      "id": "manifest",
+      "type": "database",
+      "label": "agenv.toml",
+      "sublabel": "harness[] + [skills]",
+      "pos": [290, 110],
+      "size": [170, 72],
+      "sources": [
+        { "path": "src/manifest.rs", "line": 10, "end_line": 17, "label": "Manifest shape" }
+      ]
+    },
+    {
+      "id": "resolver",
+      "type": "backend",
+      "label": "Resolver",
+      "sublabel": "ref → commit + hash",
+      "pos": [580, 300],
+      "size": [160, 72],
+      "sources": [
+        { "path": "src/resolver.rs", "line": 49, "end_line": 84, "label": "resolve_tree + checksum" },
+        { "path": "src/checksum.rs", "line": 18, "end_line": 56, "label": "deterministic tree hash" }
+      ]
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "Content Store",
+      "sublabel": "~/.local/share/agenv",
+      "pos": [870, 300],
+      "size": [170, 72],
+      "sources": [
+        { "path": "src/store.rs", "line": 38, "end_line": 44, "label": "store layout" }
+      ]
+    },
+    {
+      "id": "remote",
+      "type": "external",
+      "label": "Git Remote",
+      "sublabel": "tags · branches · SHAs",
+      "pos": [880, 110],
+      "size": [160, 64]
+    },
+    {
+      "id": "lock",
+      "type": "database",
+      "label": "agenv.lock",
+      "sublabel": "pinned commit + checksum",
+      "pos": [580, 500],
+      "size": [170, 72],
+      "sources": [
+        { "path": "src/lock.rs", "line": 9, "end_line": 26, "label": "Lock + LockedSkill" }
+      ]
+    },
+    {
+      "id": "harness",
+      "type": "frontend",
+      "label": "Agent Harness",
+      "sublabel": ".claude + .opencode skills",
+      "pos": [285, 500],
+      "size": [180, 72],
+      "sources": [
+        { "path": "src/commands/mod.rs", "line": 130, "end_line": 148, "label": "materialize" }
+      ]
+    }
+  ],
+  "connections": [
+    { "id": "dev-to-cli", "from": "dev", "to": "cli", "label": "agenv install", "variant": "emphasis" },
+    { "id": "cli-to-manifest", "from": "cli", "to": "manifest", "label": "reads", "fromSide": "top", "toSide": "bottom" },
+    { "id": "cli-to-resolver", "from": "cli", "to": "resolver", "label": "resolve skills", "variant": "emphasis" },
+    { "id": "resolver-to-store", "from": "resolver", "to": "store", "label": "fetch, checkout", "variant": "emphasis" },
+    { "id": "store-to-remote", "from": "store", "to": "remote", "label": "git fetch", "variant": "dashed", "fromSide": "top", "toSide": "bottom" },
+    { "id": "resolver-to-lock", "from": "resolver", "to": "lock", "label": "pin + checksum", "fromSide": "bottom", "toSide": "top" },
+    { "id": "cli-to-harness", "from": "cli", "to": "harness", "label": "materialize", "variant": "emphasis", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Reproducible by construction",
+      "items": [
+        "agenv.lock pins every skill to a full commit plus a sha256 of its tree",
+        "A checksum mismatch aborts before the installed tree is touched",
+        "A frozen entry installs from the store without touching the network; only update re-resolves"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Shared, content-addressed store",
+      "items": [
+        "The store is keyed by sha256(source): one bare clone per source, one detached worktree per commit",
+        "It is shared across projects, so a second project reuses an already fetched commit",
+        "agenv prune drops the entries the current lock no longer references"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "One manifest, native layouts",
+      "items": [
+        "harness is a list: claude-code maps to .claude and opencode to .opencode",
+        "Each skill is copied into <harness>/skills/<name>, with symlinked paths refused",
+        "A skill may also live in skills/<name> with a relative source and stays out of the lock; sync adopts what is already on disk"
+      ]
+    }
+  ]
+}

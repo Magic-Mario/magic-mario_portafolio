@@ -1,0 +1,513 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Life Simulator — AWS Network and Runtime",
+    "output": ".archify/architecture-life-simulator-aws-20261015-160807/life-simulator-aws.html",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:Magic-Mario/web-infra.git",
+      "revision": "48e5ee3d11ffe3c389ce9bd4636c1a371c6401ab",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "internet",
+      "type": "external",
+      "label": "Internet",
+      "sublabel": "players + scanners",
+      "pos": [
+        600,
+        30
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "igw",
+      "type": "cloud",
+      "label": "Internet Gateway",
+      "sublabel": "the VPC door",
+      "pos": [
+        600,
+        180
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "network.tf",
+          "line": 79,
+          "end_line": 85,
+          "label": "internet gateway"
+        }
+      ]
+    },
+    {
+      "id": "waf",
+      "type": "security",
+      "label": "AWS WAF",
+      "sublabel": "regional web ACL",
+      "tag": "Count mode",
+      "pos": [
+        30,
+        340
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "waf.tf",
+          "line": 70,
+          "end_line": 107,
+          "label": "web ACL + Core Rule Set"
+        },
+        {
+          "path": "waf.tf",
+          "line": 140,
+          "end_line": 168,
+          "label": "rate-based per IP"
+        },
+        {
+          "path": "waf.tf",
+          "line": 180,
+          "end_line": 183,
+          "label": "associated with the ALB"
+        }
+      ]
+    },
+    {
+      "id": "logs",
+      "type": "cloud",
+      "label": "CloudWatch Logs",
+      "sublabel": "WAF logs · KMS · 30d",
+      "pos": [
+        30,
+        530
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "waf.tf",
+          "line": 22,
+          "end_line": 66,
+          "label": "KMS key + log group"
+        }
+      ]
+    },
+    {
+      "id": "alb",
+      "type": "cloud",
+      "label": "Load Balancer",
+      "sublabel": "internet-facing · TLS 1.3",
+      "tag": "ACM cert",
+      "pos": [
+        330,
+        340
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "alb.tf",
+          "line": 23,
+          "end_line": 35,
+          "label": "public subnets, public IP"
+        },
+        {
+          "path": "alb.tf",
+          "line": 103,
+          "end_line": 114,
+          "label": "HTTPS listener"
+        },
+        {
+          "path": "alb.tf",
+          "line": 117,
+          "end_line": 131,
+          "label": "/api/* to the backend"
+        }
+      ]
+    },
+    {
+      "id": "nat",
+      "type": "cloud",
+      "label": "NAT Gateway",
+      "sublabel": "one per AZ · EIP",
+      "pos": [
+        890,
+        340
+      ],
+      "size": [
+        190,
+        72
+      ],
+      "sources": [
+        {
+          "path": "network.tf",
+          "line": 99,
+          "end_line": 110,
+          "label": "NAT + EIP per public subnet"
+        }
+      ]
+    },
+    {
+      "id": "eks_backend",
+      "type": "backend",
+      "label": "EKS: backend",
+      "sublabel": "us-east-1a · 1 node",
+      "pos": [
+        330,
+        530
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "eks.tf",
+          "line": 3,
+          "end_line": 18,
+          "label": "one module call per cluster"
+        },
+        {
+          "path": "network.tf",
+          "line": 164,
+          "end_line": 193,
+          "label": "its own route table"
+        },
+        {
+          "path": "modules/eks-cluster/main.tf",
+          "line": 17,
+          "end_line": 34,
+          "label": "node group"
+        }
+      ]
+    },
+    {
+      "id": "eks_frontend",
+      "type": "backend",
+      "label": "EKS: frontend",
+      "sublabel": "us-east-1b · 1 node",
+      "pos": [
+        570,
+        530
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "modules/eks-cluster/main.tf",
+          "line": 4,
+          "end_line": 15,
+          "label": "cluster + vpc_config"
+        },
+        {
+          "path": "network.tf",
+          "line": 398,
+          "end_line": 408,
+          "label": "its own NACL"
+        },
+        {
+          "path": "locals.tf",
+          "line": 6,
+          "end_line": 9,
+          "label": "two clusters, never three"
+        }
+      ]
+    },
+    {
+      "id": "nfw",
+      "type": "security",
+      "label": "Network Firewall",
+      "sublabel": "stateful · TLS + DNS",
+      "tag": "drop by default",
+      "pos": [
+        890,
+        530
+      ],
+      "size": [
+        190,
+        72
+      ],
+      "sources": [
+        {
+          "path": "firewall.tf",
+          "line": 12,
+          "end_line": 33,
+          "label": "stateful egress rule group"
+        },
+        {
+          "path": "firewall.tf",
+          "line": 52,
+          "end_line": 70,
+          "label": "endpoint per firewall subnet"
+        }
+      ]
+    },
+    {
+      "id": "dynamodb",
+      "type": "database",
+      "label": "DynamoDB",
+      "sublabel": "lives + events-cache",
+      "pos": [
+        30,
+        720
+      ],
+      "size": [
+        200,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dynamodb.tf",
+          "line": 26,
+          "end_line": 46,
+          "label": "lives (owner: backend)"
+        },
+        {
+          "path": "dynamodb.tf",
+          "line": 48,
+          "end_line": 68,
+          "label": "events-cache (owner: events)"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "VPC 10.0.0.0/16 — us-east-1, two AZs",
+      "wraps": [
+        "igw",
+        "alb",
+        "nat",
+        "eks_backend",
+        "eks_frontend",
+        "nfw"
+      ],
+      "pad": 30
+    },
+    {
+      "kind": "security-group",
+      "label": "Public subnets 10.0.0.0/24 + 10.0.1.0/24",
+      "wraps": [
+        "alb",
+        "nat"
+      ],
+      "pad": 14
+    },
+    {
+      "kind": "security-group",
+      "label": "Firewall subnets 10.0.2.0/24 + 10.0.3.0/24",
+      "wraps": [
+        "nfw"
+      ],
+      "pad": 14
+    },
+    {
+      "kind": "security-group",
+      "label": "backend subnet · 10.0.10.0/24",
+      "wraps": [
+        "eks_backend"
+      ],
+      "pad": 14
+    },
+    {
+      "kind": "security-group",
+      "label": "frontend subnet · 10.0.11.0/24",
+      "wraps": [
+        "eks_frontend"
+      ],
+      "pad": 14
+    }
+  ],
+  "connections": [
+    {
+      "id": "internet-to-igw",
+      "from": "internet",
+      "to": "igw",
+      "label": "80 / 443",
+      "variant": "emphasis"
+    },
+    {
+      "id": "igw-to-alb",
+      "from": "igw",
+      "to": "alb",
+      "label": "public subnet",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          685,
+          292
+        ],
+        [
+          415,
+          292
+        ]
+      ]
+    },
+    {
+      "id": "nat-to-igw",
+      "from": "nat",
+      "to": "igw",
+      "label": "egress to IGW",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "right",
+      "via": [
+        [
+          985,
+          212
+        ],
+        [
+          790,
+          212
+        ]
+      ]
+    },
+    {
+      "id": "waf-to-alb",
+      "from": "waf",
+      "to": "alb",
+      "label": "inspect",
+      "variant": "security"
+    },
+    {
+      "id": "waf-to-logs",
+      "from": "waf",
+      "to": "logs",
+      "label": "logs (KMS)"
+    },
+    {
+      "id": "alb-to-backend",
+      "from": "alb",
+      "to": "eks_backend",
+      "label": "/api/* · :8000",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "alb-to-frontend",
+      "from": "alb",
+      "to": "eks_frontend",
+      "label": "/ · UI",
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [
+        [
+          660,
+          376
+        ]
+      ]
+    },
+    {
+      "id": "frontend-to-nfw",
+      "from": "eks_frontend",
+      "to": "nfw",
+      "label": "egress 443 / 53",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "backend-to-nfw",
+      "from": "eks_backend",
+      "to": "nfw",
+      "label": "egress 443 / 53",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          415,
+          670
+        ],
+        [
+          985,
+          670
+        ]
+      ]
+    },
+    {
+      "id": "nfw-to-nat",
+      "from": "nfw",
+      "to": "nat",
+      "label": "forward",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "backend-to-dynamodb",
+      "from": "eks_backend",
+      "to": "dynamodb",
+      "label": "HTTPS · IRSA",
+      "fromSide": "left",
+      "toSide": "right",
+      "via": [
+        [
+          270,
+          566
+        ],
+        [
+          270,
+          756
+        ]
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Edge",
+      "items": [
+        "The ALB is the only internet-facing resource: it spans both public subnets and terminates TLS with an ACM certificate under ELBSecurityPolicy-TLS13-1-2-2021-06",
+        "Port 80 answers 301 to HTTPS; port 443 forwards to the frontend by default and sends /api/* straight to the backend target group",
+        "A regional WAF web ACL is attached to the ALB - Core Rule Set, Known Bad Inputs and a rate-based rule of 2000 requests per 5 minutes per IP, all starting in Count"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Egress is inspected",
+      "items": [
+        "Each private subnet routes 0.0.0.0/0 to the Network Firewall endpoint of its own AZ, and the firewall forwards to the NAT gateway of that AZ",
+        "The stateful rule group passes only TLS (443), DNS (53 tcp and udp) and established returns; everything else is dropped",
+        "Security groups cap egress at 443 plus DNS and the NACLs repeat that policy, so there is no route around the firewall"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "One private subnet per service",
+      "items": [
+        "Each service gets its own private subnet, route table, NACL and security group: 10.0.10.0/24 for the backend in us-east-1a and 10.0.11.0/24 for the frontend in us-east-1b",
+        "One reusable module builds each cluster with its own node group (1 x t3.small, ON_DEMAND, AL2023) and a dedicated security group",
+        "The events service is a ClusterIP inside the backend cluster, so gRPC never crosses the ALB"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Identity, images and the emulator",
+      "items": [
+        "One cluster role and one node role per cluster, plus an OIDC provider and one IRSA role per service whose inline policy names only its own table",
+        "Three Amazon ECR repositories with IMMUTABLE tags: a published tag is never overwritten and the node role can only pull images",
+        "The same Terraform runs against the local Floci emulator with every endpoint on port 4566; EKS addons are declared but disabled because Floci has no CreateAddon"
+      ]
+    }
+  ]
+}

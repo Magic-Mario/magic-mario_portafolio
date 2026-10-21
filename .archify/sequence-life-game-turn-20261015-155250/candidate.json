@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Life Simulator — One Game Turn",
+    "output": ".archify/sequence-life-game-turn-20261015-155250/life-game-turn.html",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [1080, 696],
+    "repository": {
+      "url": "git@github.com:Magic-Mario/web-backend.git",
+      "revision": "3eab9e16b0f6397863c7d27f02fe18af3a9c277a",
+      "link_mode": "local-only"
+    }
+  },
+  "participants": [
+    { "id": "browser", "type": "external", "label": "Player Browser", "sublabel": "anonymous X-Player-Id" },
+    { "id": "next", "type": "frontend", "label": "Next.js Frontend", "sublabel": "server-side proxy" },
+    {
+      "id": "backend",
+      "type": "backend",
+      "label": "Life Backend",
+      "sublabel": "REST + game rules",
+      "sources": [
+        { "path": "rest/app.py", "line": 449, "end_line": 468, "label": "createLife" },
+        { "path": "rest/app.py", "line": 490, "end_line": 507, "label": "advanceLife" },
+        { "path": "rest/app.py", "line": 509, "end_line": 535, "label": "submitDecision" }
+      ]
+    },
+    {
+      "id": "lives",
+      "type": "database",
+      "label": "DynamoDB lives",
+      "sublabel": "STATE + EVENT# rows",
+      "sources": [
+        { "path": "persistence/lives_repo.py", "line": 7, "end_line": 18, "label": "PK/SK layout" }
+      ]
+    },
+    {
+      "id": "events",
+      "type": "backend",
+      "label": "Events Service",
+      "sublabel": "gRPC events.v2",
+      "sources": [
+        { "path": "grpc_client/events.py", "line": 28, "end_line": 40, "label": "GetEvents client" }
+      ]
+    },
+    { "id": "cache", "type": "database", "label": "Events Cache", "sublabel": "YEAR# / DECADE#" },
+    { "id": "wiki", "type": "external", "label": "Wikipedia (es)", "sublabel": "MediaWiki Action API" }
+  ],
+  "segments": [
+    { "from": 140, "to": 244, "label": "Create a life" },
+    { "from": 244, "to": 516, "label": "Advance a period" },
+    { "from": 516, "to": 590, "label": "Decide" }
+  ],
+  "messages": [
+    { "from": "browser", "to": "next", "y": 160, "label": "POST /api/lives", "variant": "emphasis", "note": "Every call is server-side: the Next route handler proxies it and the browser never reaches the backend" },
+    { "from": "next", "to": "backend", "y": 194, "label": "proxy · X-Player-Id", "variant": "emphasis" },
+    { "from": "backend", "to": "lives", "y": 228, "label": "put STATE · stats = 50", "variant": "emphasis" },
+    { "from": "browser", "to": "next", "y": 262, "label": "POST /api/lives/advance", "variant": "emphasis" },
+    { "from": "next", "to": "backend", "y": 296, "label": "proxy", "variant": "emphasis" },
+    { "from": "backend", "to": "events", "y": 330, "label": "GetEvents(year, age, country)", "variant": "emphasis" },
+    { "from": "events", "to": "cache", "y": 364, "label": "read YEAR#/DECADE#" },
+    { "from": "events", "to": "wiki", "y": 398, "label": "action=parse · 2 requests", "variant": "dashed", "note": "Only on a cache miss; a failing source falls back to a bundled seed" },
+    { "from": "events", "to": "backend", "y": 432, "label": "batch: MAIN + DAILY + RELATIONSHIPS", "variant": "return" },
+    { "from": "backend", "to": "lives", "y": 466, "label": "put STATE + reserve[]", "variant": "emphasis" },
+    { "from": "backend", "to": "browser", "y": 500, "label": "200 one event + derived stats", "variant": "return", "note": "The batch is presented one event at a time; the rest wait in reserve[]" },
+    { "from": "browser", "to": "next", "y": 534, "label": "POST /api/lives/decision", "variant": "emphasis" },
+    { "from": "backend", "to": "browser", "y": 568, "label": "200 deltas · next pending", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "next", "from": 150, "to": 238, "type": "frontend" },
+    { "participant": "backend", "from": 184, "to": 238, "type": "backend" },
+    { "participant": "lives", "from": 220, "to": 240, "type": "database" },
+    { "participant": "next", "from": 252, "to": 510, "type": "frontend" },
+    { "participant": "backend", "from": 286, "to": 510, "type": "backend" },
+    { "participant": "events", "from": 320, "to": 442, "type": "backend" },
+    { "participant": "cache", "from": 354, "to": 372, "type": "database" },
+    { "participant": "wiki", "from": 388, "to": 406, "type": "external" },
+    { "participant": "lives", "from": 456, "to": 476, "type": "database" },
+    { "participant": "next", "from": 524, "to": 578, "type": "frontend" },
+    { "participant": "backend", "from": 558, "to": 578, "type": "backend" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "One Event at a Time",
+      "items": [
+        "A period opens with a batch: one MAIN, one DAILY and one RELATIONSHIPS event",
+        "The backend presents the first event and keeps the rest in reserve[] so ids are never repeated",
+        "Advancing again while an event is pending is a 409: the period must be resolved first"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Never Blocked",
+      "items": [
+        "If the events service times out, the advance continues with a generic event",
+        "The fallback is a bundled seed catalog with origin = SEED, never cached, so the real search stays open",
+        "The backend revalidates country and conditions because it is the source of truth for state"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "State Lives Outside the Process",
+      "items": [
+        "One STATE row holds the running life; one EVENT#<seq> row is written per resolved period",
+        "Zero-padded sequence keys keep the rows in chronological order",
+        "When the life ends, the summary is regrouped from that history - it answers 409 while the life is still running"
+      ]
+    }
+  ]
+}
